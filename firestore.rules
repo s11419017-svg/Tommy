@@ -1,0 +1,267 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================================================================
+    // 1. GLOBAL SAFETY NET (Default-Deny Catch-All)
+    // =========================================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // 2. HARDENED PRIMITIVES & RBAC HELPERS
+    // =========================================================================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidTrackId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Bootstrapped Director Admin + Database Lookup (Never trusts unverified email)
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 's11419017@tcsh.hlc.edu.tw' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // =========================================================================
+    // 3. VALIDATION BLUEPRINTS (Anti-Update-Gap & Volumetric Guards)
+    // =========================================================================
+
+    function isValidUserProfile(data, userId) {
+      let requiredKeys = ['uid', 'displayName', 'characterRole', 'sectionGroup', 'createdAt', 'updatedAt'];
+      let allowedKeys = ['uid', 'displayName', 'characterRole', 'sectionGroup', 'createdAt', 'updatedAt'];
+      let allowedSections = ['Principal Cast', 'Soprano / Alto', 'Tenor / Bass', 'Stage Direction'];
+
+      return data.keys().hasAll(requiredKeys)
+        && data.keys().hasOnly(allowedKeys)
+        && data.uid is string && data.uid == userId && data.uid == request.auth.uid && isValidId(data.uid)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100
+        && data.characterRole is string && data.characterRole.size() >= 1 && data.characterRole.size() <= 80
+        && data.sectionGroup is string && data.sectionGroup.size() >= 1 && data.sectionGroup.size() <= 50 && (data.sectionGroup in allowedSections)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidRehearsalTrack(data, trackId) {
+      let requiredKeys = [
+        'trackId', 'order', 'act', 'title', 'subtitle', 'characters',
+        'durationSec', 'bpm', 'audioUrl', 'audioLabel',
+        'dramaticContext', 'librettoSubtext', 'vocalTips', 'actingTips',
+        'cueSummary', 'updatedByUid', 'createdAt', 'updatedAt'
+      ];
+      let allowedKeys = [
+        'trackId', 'order', 'act', 'title', 'subtitle', 'characters',
+        'durationSec', 'bpm', 'audioUrl', 'audioLabel',
+        'dramaticContext', 'librettoSubtext', 'vocalTips', 'actingTips',
+        'cueSummary', 'updatedByUid', 'createdAt', 'updatedAt'
+      ];
+      let allowedActs = ['Act I', 'Act II'];
+
+      return data.keys().hasAll(requiredKeys)
+        && data.keys().hasOnly(allowedKeys)
+        && data.trackId is string && data.trackId == trackId && isValidTrackId(data.trackId)
+        && data.order is number && data.order >= 1 && data.order <= 200
+        && data.act is string && data.act.size() >= 1 && data.act.size() <= 20 && (data.act in allowedActs)
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 150
+        && data.subtitle is string && data.subtitle.size() >= 1 && data.subtitle.size() <= 150
+        && data.characters is string && data.characters.size() >= 1 && data.characters.size() <= 200
+        && data.durationSec is number && data.durationSec >= 1 && data.durationSec <= 7200
+        && data.bpm is number && data.bpm >= 30 && data.bpm <= 240
+        && data.audioUrl is string && data.audioUrl.size() >= 0 && data.audioUrl.size() <= 1000
+        && data.audioLabel is string && data.audioLabel.size() >= 0 && data.audioLabel.size() <= 150
+        && data.dramaticContext is string && data.dramaticContext.size() >= 1 && data.dramaticContext.size() <= 2000
+        && data.librettoSubtext is string && data.librettoSubtext.size() >= 1 && data.librettoSubtext.size() <= 2000
+        && data.vocalTips is string && data.vocalTips.size() >= 1 && data.vocalTips.size() <= 2000
+        && data.actingTips is string && data.actingTips.size() >= 1 && data.actingTips.size() <= 2000
+        && data.cueSummary is string && data.cueSummary.size() >= 1 && data.cueSummary.size() <= 2000
+        && data.updatedByUid is string && data.updatedByUid == request.auth.uid && isValidId(data.updatedByUid)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidRehearsalProgress(data, progressId) {
+      let requiredKeys = [
+        'progressId', 'userId', 'userName', 'characterRole',
+        'trackId', 'trackOrder', 'trackTitle', 'masteryState',
+        'lastPlaybackState', 'practiceCount', 'totalPracticeSeconds',
+        'personalNotes', 'directorFeedback', 'createdAt', 'updatedAt'
+      ];
+      let allowedKeys = [
+        'progressId', 'userId', 'userName', 'characterRole',
+        'trackId', 'trackOrder', 'trackTitle', 'masteryState',
+        'lastPlaybackState', 'practiceCount', 'totalPracticeSeconds',
+        'personalNotes', 'directorFeedback', 'createdAt', 'updatedAt'
+      ];
+      let allowedMastery = ['UNSTARTED', 'LISTENING', 'VOCAL_PRACTICE', 'OFF_BOOK', 'STAGE_READY'];
+      let allowedPlayback = ['IDLE', 'LOADING', 'READY', 'PLAYING', 'PAUSED', 'AB_LOOPING', 'COMPLETED', 'ERROR'];
+
+      return data.keys().hasAll(requiredKeys)
+        && data.keys().hasOnly(allowedKeys)
+        && data.progressId is string && data.progressId == progressId && isValidId(data.progressId)
+        && data.userId is string && isValidId(data.userId)
+        && data.userName is string && data.userName.size() >= 1 && data.userName.size() <= 100
+        && data.characterRole is string && data.characterRole.size() >= 1 && data.characterRole.size() <= 80
+        && data.trackId is string && isValidTrackId(data.trackId)
+        && data.trackOrder is number && data.trackOrder >= 1 && data.trackOrder <= 200
+        && data.trackTitle is string && data.trackTitle.size() >= 1 && data.trackTitle.size() <= 150
+        && data.masteryState is string && data.masteryState.size() >= 1 && data.masteryState.size() <= 30 && (data.masteryState in allowedMastery)
+        && data.lastPlaybackState is string && data.lastPlaybackState.size() >= 1 && data.lastPlaybackState.size() <= 30 && (data.lastPlaybackState in allowedPlayback)
+        && data.practiceCount is number && data.practiceCount >= 0 && data.practiceCount <= 10000
+        && data.totalPracticeSeconds is number && data.totalPracticeSeconds >= 0 && data.totalPracticeSeconds <= 3600000
+        && data.personalNotes is string && data.personalNotes.size() >= 0 && data.personalNotes.size() <= 1500
+        && data.directorFeedback is string && data.directorFeedback.size() >= 0 && data.directorFeedback.size() <= 1500
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAdminRecord(data, adminId) {
+      return data.keys().hasAll(['uid', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'createdAt'])
+        && data.uid is string && data.uid == adminId && isValidId(data.uid)
+        && data.createdAt is timestamp;
+    }
+
+    // =========================================================================
+    // 4. COLLECTION RULES
+    // =========================================================================
+
+    // Cast Member Public Roster Profiles (PII-Free)
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && existing().uid == userId;
+      allow list: if isSignedIn() && (existing().sectionGroup in ['Principal Cast', 'Soprano / Alto', 'Tenor / Bass', 'Stage Direction']);
+
+      allow create: if isSignedIn()
+        && isVerifiedUser()
+        && isValidId(userId)
+        && userId == request.auth.uid
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn()
+        && isVerifiedUser()
+        && isValidId(userId)
+        && isValidUserProfile(incoming(), userId)
+        && userId == request.auth.uid
+        && existing().uid == request.auth.uid
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'characterRole', 'sectionGroup', 'updatedAt']);
+
+      allow delete: if false;
+    }
+
+    // Musical Tracks from 1 to Finale
+    match /tracks/{trackId} {
+      allow get: if isSignedIn() && isValidTrackId(trackId) && existing().trackId == trackId;
+      allow list: if isSignedIn() && existing().order >= 1 && existing().order <= 200;
+
+      allow create: if isSignedIn()
+        && isVerifiedUser()
+        && isValidTrackId(trackId)
+        && isValidRehearsalTrack(incoming(), trackId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn()
+        && isVerifiedUser()
+        && isValidTrackId(trackId)
+        && isValidRehearsalTrack(incoming(), trackId)
+        && incoming().trackId == existing().trackId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'order', 'act', 'title', 'subtitle', 'characters', 'durationSec', 'bpm',
+            'audioUrl', 'audioLabel', 'dramaticContext', 'librettoSubtext',
+            'vocalTips', 'actingTips', 'cueSummary', 'updatedByUid', 'updatedAt'
+          ])
+        );
+
+      allow delete: if isSignedIn()
+        && isVerifiedUser()
+        && isValidTrackId(trackId)
+        && (existing().updatedByUid == request.auth.uid || isAdmin());
+    }
+
+    // Student Rehearsal Mastery & Practice Logs
+    match /rehearsalProgress/{progressId} {
+      allow get: if isSignedIn() && isValidId(progressId) && (existing().userId == request.auth.uid || existing().masteryState in ['UNSTARTED', 'LISTENING', 'VOCAL_PRACTICE', 'OFF_BOOK', 'STAGE_READY']);
+      allow list: if isSignedIn() && (existing().masteryState in ['UNSTARTED', 'LISTENING', 'VOCAL_PRACTICE', 'OFF_BOOK', 'STAGE_READY']);
+
+      allow create: if isSignedIn()
+        && isVerifiedUser()
+        && isValidId(progressId)
+        && isValidRehearsalProgress(incoming(), progressId)
+        && (incoming().userId == request.auth.uid || isAdmin())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn()
+        && isVerifiedUser()
+        && isValidId(progressId)
+        && isValidRehearsalProgress(incoming(), progressId)
+        && incoming().progressId == existing().progressId
+        && incoming().userId == existing().userId
+        && incoming().trackId == existing().trackId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action 1: Student Self-Practice Update (Locked once STAGE_READY unless Admin)
+          (
+            existing().userId == request.auth.uid
+            && (existing().masteryState != 'STAGE_READY' || isAdmin())
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'userName', 'characterRole', 'trackTitle', 'masteryState',
+              'lastPlaybackState', 'practiceCount', 'totalPracticeSeconds',
+              'personalNotes', 'updatedAt'
+            ])
+          )
+          ||
+          // Action 2: Director Supervision & Sign-off Override
+          (
+            isAdmin()
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'userName', 'characterRole', 'trackTitle', 'masteryState',
+              'lastPlaybackState', 'practiceCount', 'totalPracticeSeconds',
+              'personalNotes', 'directorFeedback', 'updatedAt'
+            ])
+          )
+        );
+
+      allow delete: if false;
+    }
+
+    // Trusted Admin Collection
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && (request.auth.uid == adminId || isAdmin());
+      allow list: if false;
+      allow create, update: if isAdmin() && isValidId(adminId) && isValidAdminRecord(incoming(), adminId) && incoming().createdAt == request.time;
+      allow delete: if false;
+    }
+  }
+}

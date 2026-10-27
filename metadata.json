@@ -1,0 +1,6 @@
+{
+  "name": "Les Misérables Rehearsal Studio",
+  "description": "High school musical rehearsal platform for Les Misérables featuring Track 1-to-Finale audio architecture, dual finite state machines, dramatic libretto & acting tips, and Google Auth progress supervision.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

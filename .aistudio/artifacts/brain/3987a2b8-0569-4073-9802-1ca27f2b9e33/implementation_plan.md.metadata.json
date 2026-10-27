@@ -1,0 +1,6 @@
+{
+  "summary":  "即時麥克風降噪與人聲增益引擎實施計畫，利用 Web Audio API 與 RNNoise 聲學濾波架構，提供低延遲背景降噪、歌唱頻率亮化與動態壓縮保護，全面提升個人排練試錄與音準偵測的精確度。",
+  "updatedAt":  "2026-10-21T08:27:39.492986355Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

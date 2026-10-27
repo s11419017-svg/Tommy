@@ -1,0 +1,239 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: 'Playfair Display', 'Cormorant Garamond', 'Noto Serif TC', Georgia, serif;
+  --font-serif-editorial: 'Cormorant Garamond', 'Noto Serif TC', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+:root {
+  /* Animate UI 2.0 官方指定黃金貝氏曲線 (Official Golden Easing Tokens) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);      /* 網頁 UI 進場強力外推 */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);  /* 畫面內已存在物件的移動 */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);   /* 側邊抽屜與展開面板的完美曲線 */
+}
+
+/* ============================================================================
+   EYE-COMFORT STUDIO COLOR SYSTEM (低視覺疲勞劇院溫潤暗色 / 典藏樂譜米白淺色)
+   ============================================================================ */
+.theme-dark {
+  --bg-canvas: #121210;
+  --bg-surface: #181715;
+  --bg-elevated: #1E1D1A;
+  --bg-subtle: #151412;
+  --bg-highlight: rgba(210, 180, 140, 0.10);
+  --bg-highlight-strong: rgba(210, 180, 140, 0.16);
+  --border-subtle: #282622;
+  --border-strong: #3A3630;
+  --text-primary: #EAE6DF;
+  --text-secondary: #B0AA9F;
+  --text-muted: #7C766B;
+  --accent-gold: #D2B48C;
+  --accent-gold-border: rgba(210, 180, 140, 0.45);
+  --accent-primary: #8C332B;
+  --accent-primary-hover: #A13B32;
+  --status-sage: #7BAE8E;
+  --status-sage-bg: rgba(123, 174, 142, 0.12);
+  --status-ochre: #D6A65E;
+  --status-ochre-bg: rgba(214, 166, 94, 0.12);
+}
+
+.theme-light {
+  --bg-canvas: #F6F3EC;
+  --bg-surface: #EFEBE2;
+  --bg-elevated: #FAF8F3;
+  --bg-subtle: #E8E3D8;
+  --bg-highlight: rgba(125, 83, 39, 0.07);
+  --bg-highlight-strong: rgba(125, 83, 39, 0.13);
+  --border-subtle: #DED8CC;
+  --border-strong: #C5BDAE;
+  --text-primary: #22201D;
+  --text-secondary: #57524A;
+  --text-muted: #7E776C;
+  --accent-gold: #7A4F24;
+  --accent-gold-border: rgba(122, 79, 36, 0.40);
+  --accent-primary: #7F2923;
+  --accent-primary-hover: #943029;
+  --status-sage: #2D6A4F;
+  --status-sage-bg: rgba(45, 106, 79, 0.10);
+  --status-ochre: #9A5812;
+  --status-ochre-bg: rgba(154, 88, 18, 0.10);
+}
+
+@layer base {
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: 0.015em;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+
+  .font-editorial {
+    font-family: var(--font-serif-editorial);
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================================
+   ANIMATE UI 2.0 — 物理動效規範實作 (7 Core Steps)
+   ============================================================================ */
+
+/* Step 1: 高頻互動（一天觸發上百次）與純鍵盤觸發動作（如空白鍵打點、升降調微調、倍速切換）
+   一律不加位移動畫，確保零延遲操作效率 */
+.ui-instant,
+.ui-instant:active {
+  transition: none !important;
+  transform: none !important;
+}
+
+/* Step 3, 4, 5, 6: 微互動按鈕 (Micro-interactions: 100-160ms, Asymmetric Exit, Interruptible)
+   - 進場/釋放: 150ms var(--ease-out)
+   - 按壓觸發: 110ms var(--ease-out) (快 ~27%)
+   - 僅操作 transform 與 opacity */
+.ui-btn {
+  transition:
+    opacity 120ms ease-out,
+    background-color 120ms ease-out,
+    border-color 120ms ease-out,
+    color 120ms ease-out;
+}
+
+.ui-btn:active:not(:disabled):not(.ui-instant) {
+  opacity: 0.88;
+}
+
+/* Step 2 & 4: 畫面內已存在物件的連續移動 (Orientation & Continuity) */
+.ui-move-in-place {
+  transition:
+    transform 200ms ease,
+    opacity 200ms ease;
+  will-change: transform, opacity;
+}
+
+/* Step 3, 4, 5, 6: 零跳動穩定抽屜 (Flicker-Free Smooth Collapsible Drawer) */
+.ui-drawer-shell {
+  transition:
+    opacity 200ms ease,
+    max-height 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    padding 200ms ease;
+  overflow: hidden;
+}
+
+.ui-drawer-shell[data-state="open"] {
+  opacity: 1;
+  max-height: 2000px;
+  pointer-events: auto;
+}
+
+.ui-drawer-shell[data-state="closed"] {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  border-top-width: 0 !important;
+  border-bottom-width: 0 !important;
+  pointer-events: none;
+}
+
+/* Step 5 & 6: Modal / 驗收面板與舞台橫幅轉場 (200-260ms Enter / 160ms Fast Exit) */
+.ui-modal-shell {
+  transition:
+    opacity 240ms var(--ease-out),
+    transform 240ms var(--ease-out),
+    clip-path 240ms var(--ease-out);
+  transform-origin: top center;
+  will-change: transform, opacity, clip-path;
+}
+
+.ui-modal-shell[data-state="open"] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  clip-path: inset(0 0 0 0);
+  pointer-events: auto;
+}
+
+.ui-modal-shell[data-state="closed"] {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.98);
+  clip-path: inset(0 0 100% 0);
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+  visibility: hidden;
+  transition:
+    opacity 165ms var(--ease-out),
+    transform 165ms var(--ease-out),
+    clip-path 165ms var(--ease-out),
+    visibility 0ms linear 165ms;
+}
+
+/* 橫幅通知與進場倒數提示 (Toast / Alert Feedback: 180ms --ease-out) */
+.ui-banner-transition {
+  transition:
+    transform 180ms var(--ease-out),
+    opacity 180ms var(--ease-out);
+  will-change: transform, opacity;
+}
+
+/* 畫面內現有段落指示卡片狀態連續性 (Cue Continuity: 180ms --ease-in-out) */
+.ui-cue-continuity {
+  transition:
+    transform 180ms var(--ease-in-out),
+    opacity 180ms var(--ease-in-out),
+    background-color 180ms var(--ease-in-out),
+    border-color 180ms var(--ease-in-out);
+}
+
+/* 折疊箭頭旋轉方向感 (Orientation Chevron: 180ms --ease-drawer) */
+.ui-chevron {
+  transition: transform 180ms var(--ease-drawer);
+  will-change: transform;
+}
+
+.ui-chevron[data-open="true"] {
+  transform: rotate(180deg);
+}
+
+/* Step 7: 減弱動態尊重 (@media prefers-reduced-motion: reduce)
+   當使用者系統開啟此設定時，自動將動畫改為純淡入淡出 (opacity) 並直接關閉所有位移與縮放 (transform) */
+@media (prefers-reduced-motion: reduce) {
+  .ui-btn,
+  .ui-move-in-place,
+  .ui-drawer-shell,
+  .ui-modal-shell,
+  .ui-banner-transition,
+  .ui-cue-continuity,
+  .ui-chevron {
+    transition-property: opacity, background-color, border-color, color !important;
+    transition-duration: 120ms !important;
+    transform: none !important;
+    clip-path: none !important;
+  }
+
+  .ui-btn:active:not(:disabled) {
+    transform: none !important;
+  }
+}

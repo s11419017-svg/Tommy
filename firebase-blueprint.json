@@ -1,0 +1,327 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Public rehearsal cast member profile without PII (email/phone excluded for PII isolation).",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Authenticated user UID",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Actor or student display name",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "characterRole": {
+          "type": "string",
+          "description": "Assigned role in Les Misérables (e.g. Jean Valjean, Javert, Fantine, Ensemble)",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "sectionGroup": {
+          "type": "string",
+          "description": "Vocal or production section group",
+          "enum": ["Principal Cast", "Soprano / Alto", "Tenor / Bass", "Stage Direction"],
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Profile creation server timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Profile update server timestamp"
+        }
+      },
+      "required": ["uid", "displayName", "characterRole", "sectionGroup", "createdAt", "updatedAt"]
+    },
+    "RehearsalTrack": {
+      "title": "RehearsalTrack",
+      "description": "A musical number from Track 1 to Finale in Les Misérables with audio slot, dramatic analysis, and acting/vocal tips.",
+      "type": "object",
+      "properties": {
+        "trackId": {
+          "type": "string",
+          "description": "Canonical track identifier",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "order": {
+          "type": "number",
+          "description": "Sequential track number from 1 to Finale"
+        },
+        "act": {
+          "type": "string",
+          "description": "Act identifier",
+          "enum": ["Act I", "Act II"],
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "title": {
+          "type": "string",
+          "description": "Track title in English and Chinese",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Scene setting and musical tempo description",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "characters": {
+          "type": "string",
+          "description": "Cast roles involved in this musical number",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "durationSec": {
+          "type": "number",
+          "description": "Expected duration in seconds"
+        },
+        "bpm": {
+          "type": "number",
+          "description": "Rehearsal tempo in beats per minute"
+        },
+        "audioUrl": {
+          "type": "string",
+          "description": "Remote audio URL if linked by director",
+          "minLength": 0,
+          "maxLength": 1000
+        },
+        "audioLabel": {
+          "type": "string",
+          "description": "Display label of the bound audio file",
+          "minLength": 0,
+          "maxLength": 150
+        },
+        "dramaticContext": {
+          "type": "string",
+          "description": "Dramatic context and conflict analysis",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "librettoSubtext": {
+          "type": "string",
+          "description": "Key lyric analysis and subtext commentary",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "vocalTips": {
+          "type": "string",
+          "description": "Vocal technique, breathing, dynamics, and harmony tips",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "actingTips": {
+          "type": "string",
+          "description": "Stage blocking, posture, gaze, and emotional delivery tips",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "cueSummary": {
+          "type": "string",
+          "description": "Timestamped rehearsal cues summary",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "updatedByUid": {
+          "type": "string",
+          "description": "UID of the user who last updated the track metadata",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation server timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Update server timestamp"
+        }
+      },
+      "required": [
+        "trackId",
+        "order",
+        "act",
+        "title",
+        "subtitle",
+        "characters",
+        "durationSec",
+        "bpm",
+        "audioUrl",
+        "audioLabel",
+        "dramaticContext",
+        "librettoSubtext",
+        "vocalTips",
+        "actingTips",
+        "cueSummary",
+        "updatedByUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "RehearsalProgress": {
+      "title": "RehearsalProgress",
+      "description": "Student rehearsal mastery state machine and practice session telemetry per track.",
+      "type": "object",
+      "properties": {
+        "progressId": {
+          "type": "string",
+          "description": "Composite ID in format {userId}_{trackId}",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner student UID",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userName": {
+          "type": "string",
+          "description": "Student display name",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "characterRole": {
+          "type": "string",
+          "description": "Assigned role in the production",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "trackId": {
+          "type": "string",
+          "description": "Referenced track ID",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "trackOrder": {
+          "type": "number",
+          "description": "Track sequential order from 1 to 50"
+        },
+        "trackTitle": {
+          "type": "string",
+          "description": "Track title snapshot",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "masteryState": {
+          "type": "string",
+          "description": "Mastery FSM state",
+          "enum": ["UNSTARTED", "LISTENING", "VOCAL_PRACTICE", "OFF_BOOK", "STAGE_READY"],
+          "minLength": 1,
+          "maxLength": 30
+        },
+        "lastPlaybackState": {
+          "type": "string",
+          "description": "Last recorded audio player FSM state",
+          "enum": ["IDLE", "LOADING", "READY", "PLAYING", "PAUSED", "AB_LOOPING", "COMPLETED", "ERROR"],
+          "minLength": 1,
+          "maxLength": 30
+        },
+        "practiceCount": {
+          "type": "number",
+          "description": "Total completed rehearsal passes"
+        },
+        "totalPracticeSeconds": {
+          "type": "number",
+          "description": "Total accumulated rehearsal duration in seconds"
+        },
+        "personalNotes": {
+          "type": "string",
+          "description": "Student's personal vocal/blocking notes",
+          "minLength": 0,
+          "maxLength": 1500
+        },
+        "directorFeedback": {
+          "type": "string",
+          "description": "Director or vocal coach supervision note",
+          "minLength": 0,
+          "maxLength": 1500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "First practice creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last practice update timestamp"
+        }
+      },
+      "required": [
+        "progressId",
+        "userId",
+        "userName",
+        "characterRole",
+        "trackId",
+        "trackOrder",
+        "trackTitle",
+        "masteryState",
+        "lastPlaybackState",
+        "practiceCount",
+        "totalPracticeSeconds",
+        "personalNotes",
+        "directorFeedback",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Trusted director/admin marker document.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Admin UID",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp"
+        }
+      },
+      "required": ["uid", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Public cast roster profiles (strictly no PII stored)."
+    },
+    "/tracks/{trackId}": {
+      "schema": { "$ref": "#/entities/RehearsalTrack" },
+      "description": "Musical tracks from 1 to Finale with audio metadata, dramatic analysis, and acting/vocal tips."
+    },
+    "/rehearsalProgress/{progressId}": {
+      "schema": { "$ref": "#/entities/RehearsalProgress" },
+      "description": "Student mastery state machine and practice logs per track."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Trusted director/admin lookup collection."
+    }
+  }
+}
